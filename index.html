@@ -380,5 +380,91 @@
         </div>
     </footer>
 
+    <!-- ===== REPRODUCTOR DE AUDIO ===== -->
+    <!-- Elemento de audio (oculto por defecto) -->
+    <audio id="projectAudio" src="https://raw.githubusercontent.com/cemorab2025/Proyecto_SPOA/main/Presentacion_Proyecto.wav" preload="auto"></audio>
+
+    <!-- Controles del reproductor flotantes -->
+    <div id="audioPlayerControls" class="fixed bottom-6 right-6 z-50 flex gap-3 p-3 bg-gray-900 bg-opacity-80 backdrop-blur-md rounded-lg shadow-lg border border-gray-700">
+        <button id="playPauseBtn" title="Reproducir/Pausar" class="w-10 h-10 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors duration-200"></button>
+        <button id="restartBtn" title="Reiniciar Audio" class="w-10 h-10 flex items-center justify-center text-white bg-gray-600 hover:bg-gray-700 rounded-full transition-colors duration-200"></button>
+    </div>
+
+            <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audio = document.getElementById('projectAudio');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const restartBtn = document.getElementById('restartBtn');
+
+            // --- Iconos SVG para los botones ---
+            const playIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
+            const pauseIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+            // Icono de "Reiniciar" (replay)
+            const restartIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`;
+
+            // --- Estado Inicial de los Botones ---
+            playPauseBtn.innerHTML = playIcon; // Inicia mostrando "Play"
+            restartBtn.innerHTML = restartIcon;
+
+            // --- 1. Lógica de Autoplay (3 segundos) ---
+            const audioTimeout = setTimeout(() => {
+                // Intentamos reproducir el audio.
+                // TRUCO: Algunos navegadores permiten 'play()' si el audio está silenciado primero.
+                audio.muted = true; // Silenciamos
+                const playPromise = audio.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        // ¡Éxito! Ahora que está reproduciendo, le quitamos el silencio.
+                        audio.muted = false;
+                        playPauseBtn.innerHTML = pauseIcon;
+                    }).catch(error => {
+                        // Si falla (incluso silenciado), es un bloqueo definitivo.
+                        console.warn("Autoplay fue bloqueado por el navegador. El usuario debe iniciar el audio manualmente.", error);
+                        audio.muted = false; // Nos aseguramos de quitar el silencio para el play manual
+                        playPauseBtn.innerHTML = playIcon;
+                    });
+                }
+            }, 3000); // 3000ms = 3 segundos
+
+            // --- 2. Lógica del Botón Play/Pause ---
+            playPauseBtn.addEventListener('click', () => {
+                // Si el usuario interactúa, cancelamos el timeout por si acaso
+                clearTimeout(audioTimeout); 
+                
+                if (audio.paused) {
+                    audio.play();
+                    playPauseBtn.innerHTML = pauseIcon;
+                } else {
+                    audio.pause();
+                    playPauseBtn.innerHTML = playIcon;
+                }
+            });
+
+            // --- 3. Lógica del Botón Reiniciar ---
+            restartBtn.addEventListener('click', () => {
+                clearTimeout(audioTimeout); // Cancelamos el timeout
+                audio.currentTime = 0; // Reiniciamos el tiempo
+                audio.play(); // Damos play
+                playPauseBtn.innerHTML = pauseIcon; // Aseguramos que muestre "Pausa"
+            });
+
+            // --- 4. Actualizar icono cuando el audio termine solo ---
+            audio.addEventListener('ended', () => {
+                playPauseBtn.innerHTML = playIcon;
+            });
+
+            // --- 5. Manejo de errores de carga ---
+            audio.addEventListener('error', () => {
+                console.error("No se pudo cargar el archivo de audio. Verifica la URL.");
+                playPauseBtn.innerHTML = playIcon;
+                playPauseBtn.disabled = true; // Deshabilitamos los botones si no hay audio
+                restartBtn.disabled = true;
+                // Opcional: Ocultar los controles si el audio falla
+                // document.getElementById('audioPlayerControls').style.display = 'none';
+            });
+        });
+    </script>
+
 </body>
 </html>
